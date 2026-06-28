@@ -4,7 +4,7 @@ import { mapApiUser, generateId } from '../utils/helpers';
 
 /**
  * Custom hook that encapsulates all user data fetching and CRUD operations.
- * Returns state and action callbacks to the consuming component.
+ * Caches and persists user states in localStorage to survive browser refreshes.
  */
 const useUsers = () => {
   const [users, setUsers] = useState([]);
@@ -16,9 +16,16 @@ const useUsers = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await getUsers();
-      const mapped = response.data.map(mapApiUser);
-      setUsers(mapped);
+      // Load from localStorage cache if it exists to preserve modifications across refreshes
+      const cached = localStorage.getItem('userflow_users');
+      if (cached) {
+        setUsers(JSON.parse(cached));
+      } else {
+        const response = await getUsers();
+        const mapped = response.data.map(mapApiUser);
+        setUsers(mapped);
+        localStorage.setItem('userflow_users', JSON.stringify(mapped));
+      }
     } catch (err) {
       setError(
         'Unable to fetch users from the API. Please check your connection and try again.'
@@ -36,13 +43,16 @@ const useUsers = () => {
   const addUser = useCallback(
     async (newUserData) => {
       try {
-        // JSONPlaceholder accepts POST and returns a simulated response
         await createUser(newUserData);
         const createdUser = {
           ...newUserData,
           id: generateId(users),
         };
-        setUsers((prev) => [createdUser, ...prev]);
+        setUsers((prev) => {
+          const updated = [createdUser, ...prev];
+          localStorage.setItem('userflow_users', JSON.stringify(updated));
+          return updated;
+        });
         return { success: true };
       } catch (err) {
         return { success: false, message: 'Failed to create user. Please try again.' };
@@ -55,9 +65,11 @@ const useUsers = () => {
   const editUser = useCallback(async (id, updatedData) => {
     try {
       await updateUser(id, updatedData);
-      setUsers((prev) =>
-        prev.map((u) => (u.id === id ? { ...u, ...updatedData } : u))
-      );
+      setUsers((prev) => {
+        const updated = prev.map((u) => (u.id === id ? { ...u, ...updatedData } : u));
+        localStorage.setItem('userflow_users', JSON.stringify(updated));
+        return updated;
+      });
       return { success: true };
     } catch (err) {
       return { success: false, message: 'Failed to update user. Please try again.' };
@@ -68,7 +80,11 @@ const useUsers = () => {
   const removeUser = useCallback(async (id) => {
     try {
       await deleteUser(id);
-      setUsers((prev) => prev.filter((u) => u.id !== id));
+      setUsers((prev) => {
+        const updated = prev.filter((u) => u.id !== id);
+        localStorage.setItem('userflow_users', JSON.stringify(updated));
+        return updated;
+      });
       return { success: true };
     } catch (err) {
       return { success: false, message: 'Failed to delete user. Please try again.' };

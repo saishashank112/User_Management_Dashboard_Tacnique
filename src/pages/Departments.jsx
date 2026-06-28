@@ -19,10 +19,18 @@ const EMPTY_DEPT_FORM = {
 };
 
 const Departments = ({ addDeptTrigger }) => {
-  const [depts, setDepts] = useState(INITIAL_DEPARTMENTS);
+  const [depts, setDepts] = useState(() => {
+    const cached = localStorage.getItem('userflow_departments');
+    return cached ? JSON.parse(cached) : INITIAL_DEPARTMENTS;
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState('id');
   const [sortOrder, setSortOrder] = useState('asc');
+
+  // Save to localStorage when depts changes
+  useEffect(() => {
+    localStorage.setItem('userflow_departments', JSON.stringify(depts));
+  }, [depts]);
 
   // Modal & form states
   const [showForm, setShowForm] = useState(false);
