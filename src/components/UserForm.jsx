@@ -24,9 +24,26 @@ const UserForm = ({ isOpen, onClose, onSubmit, editingUser }) => {
   const title = isEditing ? 'Edit User' : 'Add New User';
   const submitLabel = isEditing ? 'Save Changes' : 'Add User';
 
+  const [departments, setDepartments] = useState(DEPARTMENTS);
+
   // Populate form when editing, reset when adding
   useEffect(() => {
     if (isOpen) {
+      // Load departments dynamically from localStorage
+      const cached = localStorage.getItem('userflow_departments');
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed)) {
+            setDepartments(parsed.map(d => d.name));
+          }
+        } catch (e) {
+          setDepartments(DEPARTMENTS);
+        }
+      } else {
+        setDepartments(DEPARTMENTS);
+      }
+
       setFormData(
         isEditing
           ? {
@@ -229,7 +246,7 @@ const UserForm = ({ isOpen, onClose, onSubmit, editingUser }) => {
               onChange={(e) => handleChange('department', e.target.value)}
               aria-describedby={errors.department ? 'err-department' : undefined}
             >
-              {DEPARTMENTS.map((dept) => (
+              {departments.map((dept) => (
                 <option key={dept} value={dept}>{dept}</option>
               ))}
             </select>

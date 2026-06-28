@@ -17,10 +17,27 @@ const FilterPopup = ({ isOpen, onClose, onApply, activeFilters }) => {
   const [localFilters, setLocalFilters] = useState(activeFilters || EMPTY_FILTERS);
   const panelRef = useRef(null);
 
-  // Sync incoming active filters when the popup opens
+  const [departments, setDepartments] = useState(DEPARTMENTS);
+
+  // Sync incoming active filters and load dynamic departments when the popup opens
   useEffect(() => {
     if (isOpen) {
       setLocalFilters(activeFilters || EMPTY_FILTERS);
+
+      // Load departments dynamically from localStorage
+      const cached = localStorage.getItem('userflow_departments');
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed)) {
+            setDepartments(parsed.map(d => d.name));
+          }
+        } catch (e) {
+          setDepartments(DEPARTMENTS);
+        }
+      } else {
+        setDepartments(DEPARTMENTS);
+      }
     }
   }, [isOpen, activeFilters]);
 
@@ -143,7 +160,7 @@ const FilterPopup = ({ isOpen, onClose, onApply, activeFilters }) => {
               onChange={(e) => handleChange('department', e.target.value)}
             >
               <option value="All">All Departments</option>
-              {DEPARTMENTS.map((dept) => (
+              {departments.map((dept) => (
                 <option key={dept} value={dept}>{dept}</option>
               ))}
             </select>
